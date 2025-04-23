@@ -25,18 +25,28 @@ clean:
 	rm -rf $(BUILD_DIR)
 	@echo "Clean complete!"
 
-run: build
-	@echo "Running..."
-	$(BUILD_DIR)/$(BINARY_NAME) $(ARGS)
+install: build
+	@echo "Installing to /usr/local/bin..."
+	install -D $(BUILD_DIR)/$(BINARY_NAME) /usr/local/bin/$(BINARY_NAME)
+	@echo "Installation to /usr/bin complete!"
+
+user-install: build
+	@echo "Installing to user's local bin directory..."
+	mkdir -p ~/.local/bin
+	install -D $(BUILD_DIR)/$(BINARY_NAME) ~/.local/bin/$(BINARY_NAME)
+	@echo "Installation to user's local bin directory complete!"
+	@echo "Don't forget to add \$$HOME/.local/bin to \$$PATH:"
+	@echo "  export PATH=\"\$$HOME/.local/bin:\$$PATH\""
 
 help:
 	@echo "Usage: make [target]"
 	@echo "Targets:"
-	@echo "  all        Builds and compresses the binary"
-	@echo "  build      Builds the binary"
-	@echo "  compress   Compresses the binary with UPX"
-	@echo "  clean      Cleans the build directory"
-	@echo "  run        Runs the application"
-	@echo "  help       Shows this help message"
+	@echo "  all            Builds and compresses the binary"
+	@echo "  build          Builds the binary"
+	@echo "  compress       Compresses the binary with UPX"
+	@echo "  clean          Cleans the build directory"
+	@echo "  install        Installs the binary to /usr/local/bin"
+	@echo "  user-install   Installs the binary to ~/.local/bin"
+	@echo "  help           Shows this help message"
 
 .DEFAULT_GOAL := help
