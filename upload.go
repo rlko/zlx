@@ -49,7 +49,7 @@ func detectContentType(filePath string) (string, error) {
 	return contentType, nil
 }
 
-func uploadFile(serverName, token, filePath string) (string, error) {
+func uploadFile(serverName, token, filePath string, maxViews int, originalName bool) (string, error) {
 	parsedURL, err := url.Parse(serverName)
 	if err != nil {
 		fmt.Println("Error parsing URL:", err)
@@ -125,6 +125,11 @@ func uploadFile(serverName, token, filePath string) (string, error) {
 
 	req.Header.Set("Authorization", token)
 	req.Header.Set("Content-Type", writer.FormDataContentType())
+
+	if maxViews > 0 {
+		req.Header.Set("x-zipline-max-views", fmt.Sprintf("%d", maxViews))
+	}
+	req.Header.Set("x-zipline-original-name", fmt.Sprintf("%t", originalName))
 
 	client := &http.Client{}
 	resp, err := client.Do(req)

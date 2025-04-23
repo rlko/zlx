@@ -8,6 +8,11 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var (
+	maxViewsFlag     int
+	originalNameFlag bool
+)
+
 var rootCmd = &cobra.Command{
 	Use:   "zlx",
 	Short: "zlx is a CLI tool to upload files",
@@ -24,7 +29,7 @@ var uploadCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		filePath := args[0]
 
-		returnedURL, err := uploadFile(config.ServerName, config.Token, filePath)
+		returnedURL, err := uploadFile(config.ServerName, config.Token, filePath, maxViewsFlag, originalNameFlag)
 		if err != nil {
 			fmt.Println("Error uploading file:", err)
 			os.Exit(1)
@@ -45,6 +50,9 @@ func Execute() {
 	defaultConfig := filepath.Join(home, ".config", "zlx", "config.json")
 
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", defaultConfig, "config file")
+
+	uploadCmd.Flags().IntVarP(&maxViewsFlag, "max-views", "m", 0, "Maximum views for the uploaded file")
+	uploadCmd.Flags().BoolVarP(&originalNameFlag, "original-name", "o", false, "Use original name for the uploaded file")
 
 	rootCmd.AddCommand(uploadCmd)
 	rootCmd.AddCommand(configCmd)
