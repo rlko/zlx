@@ -49,42 +49,25 @@ func detectContentType(filePath string) (string, error) {
 	return contentType, nil
 }
 
-func uploadFile(serverName, token, filePath string, maxViews int, originalName bool) (string, error) {
-	parsedURL, err := url.Parse(serverName)
-	if err != nil {
-		fmt.Println("Error parsing URL:", err)
-		return "", err
-	}
-
-	hostname := parsedURL.Hostname()
-
-	if hostname == "" {
-		// If parsing as a full URL fails, treat serverName as just the hostname
-		hostname = serverName
-	}
-
-	if hostname == "" {
-		return "", fmt.Errorf("invalid servername in config file: %s", serverName)
-	}
-
+func prepareMultipartBody(filePath string) (*bytes.Buffer, string, string, error) {
 	contentType, err := detectContentType(filePath)
 	if err != nil {
 		fmt.Println("Error detecting content type:", err)
 		fmt.Println("Content-Type set to: application/octet-stream")
-		return "", err
+		return nil, "", "", err
 	}
 
 	file, err := os.Open(filePath)
 	if err != nil {
-		return "", err
+		return nil, "", "", err
 	}
 	defer file.Close()
 
-	// Reset the file reader to the beginning of the file
+	// Reset file reader
 	_, err = file.Seek(0, io.SeekStart)
 	if err != nil {
 		fmt.Println("Error seeking to start of file:", err)
-		return "", err
+		return nil, "", "", err
 	}
 
 	body := &bytes.Buffer{}
@@ -92,44 +75,86 @@ func uploadFile(serverName, token, filePath string, maxViews int, originalName b
 
 	h := make(textproto.MIMEHeader)
 	h.Set("Content-Disposition",
-		fmt.Sprintf(`form-data; name="%s"; filename="%s"`,
-			"file", filepath.Base(filePath)))
+		fmt.Sprintf(`form-data; name="%s"; filename="%s"`, "file", filepath.Base(filePath)))
 	h.Set("Content-Type", contentType)
 
 	part, err := writer.CreatePart(h)
 	if err != nil {
-		return "", err
+		return nil, "", "", err
 	}
 
 	_, err = io.Copy(part, file)
 	if err != nil {
-		return "", err
+		return nil, "", "", err
 	}
 
 	err = writer.Close()
 	if err != nil {
+		return nil, "", "", err
+	}
+
+	return body, writer.FormDataContentType(), contentType, nil
+}
+
+func getFullURL(serverName string, pathName string) (string, error) {
+	var scheme string
+
+	parsedURL, err := url.Parse(serverName)
+	if err != nil {
+		fmt.Println("Error parsing URL:", err)
 		return "", err
 	}
 
-	var uploadURL string
-	if config.HTTPInsecure {
-		uploadURL = "http://" + hostname + "/api/upload"
-	} else {
-		uploadURL = "https://" + hostname + "/api/upload"
+	scheme = parsedURL.Scheme
+	serverName = parsedURL.Hostname()
+
+	if scheme == "" {
+		scheme = "https://"
 	}
 
-	req, err := http.NewRequest("POST", uploadURL, body)
+	if serverName == "" {
+		serverName = config.ServerName
+		if serverName == "" {
+			return "", fmt.Errorf("empty or invalid \"servername\" in config file")
+		}
+	}
+
+	if pathName == "" {
+		pathName = "/api/upload"
+	}
+
+	return scheme + "://" + serverName + pathName, nil
+}
+
+func uploadFile(config Config, filePath string) (string, error) {
+
+	//	fmt.Println("Flags: config.Upload.MaxViews:", config.Upload.MaxViews)
+	//	fmt.Println("Flags: config.Upload.OriginalName:", config.Upload.OriginalName)
+	//	fmt.Println("Flags: config.Upload.Clipboard:", config.Upload.Clipboard)
+
+	url, err := getFullURL(config.ServerName, config.PathName)
+	if err != nil {
+		fmt.Println("Error getting full URL:", err)
+		return "", err
+	}
+
+	body, contentTypeHeader, _, err := prepareMultipartBody(filePath)
 	if err != nil {
 		return "", err
 	}
 
-	req.Header.Set("Authorization", token)
-	req.Header.Set("Content-Type", writer.FormDataContentType())
-
-	if maxViews > 0 {
-		req.Header.Set("x-zipline-max-views", fmt.Sprintf("%d", maxViews))
+	req, err := http.NewRequest("POST", url, body)
+	if err != nil {
+		return "", err
 	}
-	req.Header.Set("x-zipline-original-name", fmt.Sprintf("%t", originalName))
+
+	req.Header.Set("Authorization", config.Token)
+	req.Header.Set("Content-Type", contentTypeHeader)
+
+	if config.Upload.MaxViews > 0 {
+		req.Header.Set("x-zipline-max-views", fmt.Sprintf("%d", config.Upload.MaxViews))
+	}
+	req.Header.Set("x-zipline-original-name", fmt.Sprintf("%t", config.Upload.OriginalName))
 
 	client := &http.Client{}
 	resp, err := client.Do(req)

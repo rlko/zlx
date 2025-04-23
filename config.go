@@ -13,9 +13,10 @@ import (
 )
 
 type Config struct {
-	ServerName   string `json:"servername"`
-	HTTPInsecure bool   `json:"http_insecure"`
-	Token        string `json:"token"`
+	ServerName string        `json:"servername"`
+	PathName   string        `json:"pathname"`
+	Token      string        `json:"token"`
+	Upload     UploadOptions `json:"upload"`
 }
 
 var config Config
@@ -29,7 +30,7 @@ func initConfig() {
 	if err != nil {
 		fmt.Printf("Config file not found at %s\n", configPath)
 		// If the file doesn't exist, set default values
-		config.HTTPInsecure = false
+		config.PathName = "/api/upload"
 		return
 	}
 	defer jsonFile.Close()
@@ -77,10 +78,16 @@ var configGetCmd = &cobra.Command{
 		switch key {
 		case "servername":
 			fmt.Println(config.ServerName)
+		case "pathname":
+			fmt.Println(config.PathName)
 		case "token":
 			fmt.Println(config.Token)
-		case "http_insecure":
-			fmt.Println(config.HTTPInsecure)
+		case "upload.max_views":
+			fmt.Println(config.Upload.MaxViews)
+		case "upload.original_name":
+			fmt.Println(config.Upload.OriginalName)
+		case "upload.clipboard":
+			fmt.Println(config.Upload.Clipboard)
 		default:
 			fmt.Printf("Error: key '%s' not found\n", key)
 			os.Exit(1)
@@ -93,10 +100,31 @@ var configListCmd = &cobra.Command{
 	Short: "List all configuration variables",
 	Long:  `List all configuration variables and their values.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("Servername:", config.ServerName)
-		fmt.Println("Token:", config.Token)
-		fmt.Println("HTTPInsecure:", config.HTTPInsecure)
+		fmt.Println("servername:", config.ServerName)
+		fmt.Println("pathname:", config.PathName)
+		fmt.Println("token:", config.Token)
+		fmt.Println("upload.max_views:", config.Upload.MaxViews)
+		fmt.Println("upload.original_name:", config.Upload.OriginalName)
+		fmt.Println("upload.clipboard:", config.Upload.Clipboard)
 	},
+}
+
+func getBoolValue(value string) bool {
+	boolValue, err := strconv.ParseBool(value)
+	if err != nil {
+		fmt.Println("Error: invalid value for boolean, must be 'true' or 'false'")
+		os.Exit(1)
+	}
+	return boolValue
+}
+
+func getIntValue(value string) int {
+	intValue, err := strconv.Atoi(value)
+	if err != nil {
+		fmt.Println("Error: invalid value for integer, must be a valid number")
+		os.Exit(1)
+	}
+	return intValue
 }
 
 var configSetCmd = &cobra.Command{
@@ -126,15 +154,16 @@ var configSetCmd = &cobra.Command{
 		switch key = strings.ToLower(key); key {
 		case "servername":
 			existingConfig.ServerName = value
+		case "pathname":
+			existingConfig.PathName = value
 		case "token":
 			existingConfig.Token = value
-		case "http_insecure":
-			boolValue, err := strconv.ParseBool(value)
-			if err != nil {
-				fmt.Println("Error: http_insecure must be true or false")
-				os.Exit(1)
-			}
-			existingConfig.HTTPInsecure = boolValue
+		case "upload.clipboard":
+			existingConfig.Upload.Clipboard = getBoolValue(value)
+		case "upload.max_views":
+			existingConfig.Upload.MaxViews = getIntValue(value)
+		case "upload.original_name":
+			existingConfig.Upload.OriginalName = getBoolValue(value)
 		default:
 			fmt.Printf("Error: key '%s' not found\n", key)
 			os.Exit(1)
