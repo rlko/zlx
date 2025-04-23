@@ -12,10 +12,10 @@
 
 ## How zlx Fixes This
 
-- **No More Config Juggling**  
+- **No More Config Juggling**
   Set sane defaults once, override anytime with flags
 
-- **True Per-Upload Control**  
+- **True Per-Upload Control**
   Need max-views just this once? Add `-m 5` and move on
 
 ## Configuration Essentials
@@ -29,21 +29,19 @@ zlx config set token "your_token_here"
 
 ### Optional Settings
 ```bash
-zlx config set pathname "/custom/api/upload"  # Default: "/api/upload"
-zlx config set upload.clipboard true      # Default: false
+zlx config set pathname "/custom/upload"  # Default: "/api/upload"
+zlx config set upload.clipboard true      # Default: false (echo only)
 zlx config set upload.max_views 10        # Default: 0 (unlimited)
 zlx config set upload.original_name true  # Default: false
 ```
 
-## Core Principle
+## Clipboard Behavior
+
+By default, zlx **echoes the URL to stdout**. Use `-c` to **additionally** copy to clipboard:
 
 ```bash
-# Persistent config sets safe defaults
-zlx config set upload.clipboard true
-
-# Flags provide per-upload control
-zlx up file.txt                 # Uses clipboard (from config)
-zlx up secret.txt -c=false      # Disables just for this upload
+zlx up file.txt       # Only echoes URL
+zlx up file.txt -c    # Echoes AND copies to clipboard
 ```
 
 ## Installation
@@ -59,14 +57,12 @@ cd zlx
 #### Build and install (system-wide)
 ```bash
 make build
-make compress
 sudo make install
 ```
 
 #### OR for local user installation
 ```bash
 make build
-make compress
 make user-install
 ```
 
@@ -84,28 +80,23 @@ Available Makefile targets:
 zlx up file.txt
 ```
 
-### Custom One-Time Upload
+### Persistent Clipboard Setting
 ```bash
-zlx up sensitive.doc \
-  -m 1 \             # Max 1 view
-  -o \               # Keep original name
-  -c=false           # Disable clipboard copy
+zlx config set upload.clipboard true  # Always copy to clipboard
+zlx up file.txt  # Now copies automatically
 ```
 
 ## Flag Reference
-| Flag | Short | Config Equivalent | Default |
-|------|-------|--------------------|---------|
-| `--max-views` | `-m` | `upload.max_views` | 0 |
-| `--original-name` | `-o` | `upload.original_name` | false |
-| `--clipboard` | `-c` | `upload.clipboard` | false |
+| Flag | Short | Effect | Config Equivalent |
+|------|-------|--------|--------------------|
+| `--clipboard` | `-c` | Echoes URL AND copies to clipboard | `upload.clipboard` |
+| `--max-views` | `-m` | Sets maximum views | `upload.max_views` |
+| `--original-name` | `-o` | Preserves filename | `upload.original_name` |
 
 ## Key Features
-- **Smart URL Handling**  
-  `servername` auto-prepends https:// if missing
-- **Config Hierarchy**  
-  Flags > Persistent Config > Defaults
-- **No Negative Flags (yet)**  
-  Use `-c=false` instead of non-existent `--no-clipboard`
+- **Explicit Output** - Always echoes URL to stdout
+- **Additive Clipboard** - `-c` supplements (not replaces) echo behavior
+- **No Silent Mode** - Always visible output with optional clipboard copy
 
 ## License
 

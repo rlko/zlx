@@ -109,7 +109,7 @@ func getFullURL(serverName string, pathName string) (string, error) {
 	serverName = parsedURL.Hostname()
 
 	if scheme == "" {
-		scheme = "https://"
+		scheme = "https"
 	}
 
 	if serverName == "" {
