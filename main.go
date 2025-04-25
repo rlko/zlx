@@ -18,7 +18,7 @@ type UploadOptions struct {
 var rootCmd = &cobra.Command{
 	Use:   "zlx",
 	Short: "zlx is a CLI tool to upload files",
-	Long: `zlx is a simple CLI tool to upload files to a server.
+	Long: `zlx is a simple CLI tool to upload files to a Zipline server.
 It reads the servername and token from a config file.`,
 }
 
