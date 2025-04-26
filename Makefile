@@ -12,20 +12,39 @@ ARCH := $(shell dpkg --print-architecture)
 OS := $(shell uname -s | tr '[:upper:]' '[:lower:]')
 PACKAGE_BASENAME := $(BINARY_NAME)_v$(VERSION)_$(OS)_$(ARCH)
 
-.PHONY: all build compress clean install user-install help deb tarball
+# Flags
+COMPRESS ?= 0
+FORCE_BUILD ?= 0
 
-all: build compress
+.PHONY: all build compress clean install user-install help deb tarball deps
 
-build:
-	@echo "Building..."
-	@mkdir -p $(BUILD_DIR)
-	go build $(LDFLAGS) -o $(BUILD_DIR)/$(BINARY_NAME) $(GO_FILES)
-	@echo "Build complete!"
+all: build
+
+deps:
+	@echo "Checking dependencies..."
+	@which go >/dev/null 2>&1 || (echo "Error: Go is not installed. Please install Go from https://golang.org/dl/"; exit 1)
+	@go version
+	@echo "Dependencies check complete!"
+
+build: deps
+	@if [ "$(FORCE_BUILD)" = "1" ] || [ ! -f "$(BUILD_DIR)/$(BINARY_NAME)" ]; then \
+		echo "Building..."; \
+		mkdir -p $(BUILD_DIR); \
+		go mod tidy; \
+		go build $(LDFLAGS) -o $(BUILD_DIR)/$(BINARY_NAME) $(GO_FILES); \
+		echo "Build complete!"; \
+	else \
+		echo "Binary already exists, skipping build..."; \
+	fi
 
 compress: build
-	@echo "Compressing with UPX..."
-	upx $(UPX_OPTIONS) $(BUILD_DIR)/$(BINARY_NAME)
-	@echo "Compression complete!"
+	@echo "Checking for UPX..."
+	@which upx >/dev/null 2>&1 && ( \
+		echo "Compressing with UPX..."; \
+		upx $(UPX_OPTIONS) $(BUILD_DIR)/$(BINARY_NAME); \
+		echo "Compression complete!"; \
+	) || printf "Skipping compression (UPX not found)\n\
+	To enable compression, install UPX from: https://upx.github.io/\n"
 
 clean:
 	@echo "Cleaning..."
@@ -45,7 +64,10 @@ user-install: build
 	@echo "Don't forget to add \$$HOME/.local/bin to \$$PATH:"
 	@echo "  export PATH=\"\$$HOME/.local/bin:\$$PATH\""
 
-deb: build compress
+deb: build
+	@if [ "$(COMPRESS)" = "1" ]; then \
+		$(MAKE) compress; \
+	fi
 	@echo "Packaging .deb file..."
 	rm -rf $(DEB_DIR)
 	mkdir -p $(DEB_DIR)/DEBIAN
@@ -56,14 +78,18 @@ deb: build compress
 	@echo "Section: utils" >> $(DEB_DIR)/DEBIAN/control
 	@echo "Priority: optional" >> $(DEB_DIR)/DEBIAN/control
 	@echo "Architecture: $(ARCH)" >> $(DEB_DIR)/DEBIAN/control
-	@echo "Maintainer: You <you@example.com>" >> $(DEB_DIR)/DEBIAN/control
-	@echo "Description: $(PROJECT_NAME) built with Go" >> $(DEB_DIR)/DEBIAN/control
+	@echo "Maintainer: rlko <rlko@duck.com>" >> $(DEB_DIR)/DEBIAN/control
+	@echo "Description: $(PROJECT_NAME) is Zipline uploader tool built with Go" >> $(DEB_DIR)/DEBIAN/control
 	chmod -R 0755 $(DEB_DIR)
 	dpkg-deb --build $(DEB_DIR) $(BUILD_DIR)/$(PACKAGE_BASENAME).deb
 	@echo "Debian package created: $(BUILD_DIR)/$(PACKAGE_BASENAME).deb"
 
-tarball: build compress
+tarball: build
+	@if [ "$(COMPRESS)" = "1" ]; then \
+		$(MAKE) compress; \
+	fi
 	@echo "Creating tar.gz archive..."
+	rm -f $(BUILD_DIR)/$(PACKAGE_BASENAME).tar.gz
 	mkdir -p $(BUILD_DIR)/tarball
 	cp $(BUILD_DIR)/$(BINARY_NAME) $(BUILD_DIR)/tarball/
 	tar -czf $(BUILD_DIR)/$(PACKAGE_BASENAME).tar.gz -C $(BUILD_DIR)/tarball $(BINARY_NAME)
@@ -71,16 +97,20 @@ tarball: build compress
 	@echo "Created: $(BUILD_DIR)/$(PACKAGE_BASENAME).tar.gz"
 
 help:
-	@echo "Usage: make [target]"
+	@echo "Usage: make [target] [COMPRESS=1] [FORCE_BUILD=1]"
 	@echo "Targets:"
-	@echo "  all            Builds and compresses the binary"
-	@echo "  build          Builds the binary"
-	@echo "  compress       Compresses the binary with UPX"
+	@echo "  all            Builds the binary"
+	@echo "  build          Builds the binary (requires Go)"
+	@echo "  compress       Compresses the binary with UPX (optional)"
 	@echo "  clean          Cleans the build directory"
 	@echo "  install        Installs the binary to /usr/local/bin"
 	@echo "  user-install   Installs the binary to ~/.local/bin"
 	@echo "  deb            Builds a .deb package"
 	@echo "  tarball        Creates a tar.gz archive"
 	@echo "  help           Shows this help message"
+	@echo ""
+	@echo "Options:"
+	@echo "  COMPRESS=1     Enable compression for deb/tarball targets"
+	@echo "  FORCE_BUILD=1  Force rebuild even if binary exists"
 
 .DEFAULT_GOAL := help
