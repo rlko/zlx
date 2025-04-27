@@ -66,6 +66,7 @@ func Execute() {
 	uploadCmd.Flags().IntVarP(&flags.MaxViews, "max-views", "m", 0, "Maximum views for the uploaded file")
 	uploadCmd.Flags().BoolVarP(&flags.OriginalName, "original-name", "o", false, "Use original name for the uploaded file")
 	uploadCmd.Flags().BoolVarP(&flags.Clipboard, "clipboard", "c", false, "Copy the returned URL to the clipboard")
+	uploadCmd.Flags().BoolVarP(&flags.Clipboard, "no-clipboard", "n", false, "Disable copying to clipboard")
 	uploadCmd.PreRun = func(cmd *cobra.Command, args []string) {
 		if cmd.Flags().Changed("max-views") {
 			config.Upload.MaxViews = flags.MaxViews
@@ -75,6 +76,9 @@ func Execute() {
 		}
 		if cmd.Flags().Changed("clipboard") {
 			config.Upload.Clipboard = flags.Clipboard
+		}
+		if cmd.Flags().Changed("no-clipboard") {
+			config.Upload.Clipboard = false
 		}
 	}
 

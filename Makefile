@@ -105,7 +105,7 @@ help:
 	@echo "  clean          Cleans the build directory"
 	@echo "  install        Installs the binary to /usr/local/bin"
 	@echo "  user-install   Installs the binary to ~/.local/bin"
-	@echo "  deb            Builds a .deb package"
+	@echo "  deb            Builds a deb package"
 	@echo "  tarball        Creates a tar.gz archive"
 	@echo "  help           Shows this help message"
 	@echo ""
