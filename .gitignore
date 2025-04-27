@@ -24,4 +24,13 @@
 # Go workspace file
 go.work
 
+# Build directory
+build/
+
+# IDE specific files
+.idea/
+.vscode/
+*.swp
+*.swo
+
 # End of https://www.toptal.com/developers/gitignore/api/go
