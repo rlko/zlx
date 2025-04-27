@@ -1,4 +1,4 @@
-module zlx
+module github.com/rlko/zlx
 
 go 1.24.2
 
