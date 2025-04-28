@@ -24,8 +24,11 @@
 # Go workspace file
 go.work
 
-# Build directory
-build/
+# Build directory (except tarball files)
+build/*
+!build/tarball/
+!build/tarball/Makefile
+!build/tarball/README
 
 # IDE specific files
 .idea/

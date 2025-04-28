@@ -48,18 +48,25 @@ compress: build
 
 clean:
 	@echo "Cleaning..."
-	rm -rf $(BUILD_DIR)
+	rm -rf $(BUILD_DIR)/$(BINARY_NAME)
+	rm -rf $(BUILD_DIR)/$(PACKAGE_BASENAME)*
+	rm -rf $(DEB_DIR)
 	@echo "Clean complete!"
 
 install: build
 	@echo "Installing to /usr/local/bin..."
 	install -D $(BUILD_DIR)/$(BINARY_NAME) /usr/local/bin/$(BINARY_NAME)
-	@echo "Installation to /usr/bin complete!"
+	@echo "Installing man page..."
+	install -D man/$(BINARY_NAME).1 /usr/local/share/man/man1/$(BINARY_NAME).1
+	@echo "Installation complete!"
 
 user-install: build
 	@echo "Installing to user's local bin directory..."
 	mkdir -p ~/.local/bin
 	install -D $(BUILD_DIR)/$(BINARY_NAME) ~/.local/bin/$(BINARY_NAME)
+	@echo "Installing man page..."
+	mkdir -p ~/.local/share/man/man1
+	install -D man/$(BINARY_NAME).1 ~/.local/share/man/man1/$(BINARY_NAME).1
 	@echo "Installation to user's local bin directory complete!"
 	@echo "Don't forget to add \$$HOME/.local/bin to \$$PATH:"
 	@echo "  export PATH=\"\$$HOME/.local/bin:\$$PATH\""
@@ -72,7 +79,9 @@ deb: build
 	rm -rf $(DEB_DIR)
 	mkdir -p $(DEB_DIR)/DEBIAN
 	mkdir -p $(DEB_DIR)/usr/local/bin
+	mkdir -p $(DEB_DIR)/usr/local/share/man/man1
 	install -m 0755 $(BUILD_DIR)/$(BINARY_NAME) $(DEB_DIR)/usr/local/bin/$(BINARY_NAME)
+	install -m 0644 man/$(BINARY_NAME).1 $(DEB_DIR)/usr/local/share/man/man1/$(BINARY_NAME).1
 	@echo "Package: $(PROJECT_NAME)" > $(DEB_DIR)/DEBIAN/control
 	@echo "Version: $(VERSION)" >> $(DEB_DIR)/DEBIAN/control
 	@echo "Section: utils" >> $(DEB_DIR)/DEBIAN/control
@@ -92,7 +101,10 @@ tarball: build
 	rm -f $(BUILD_DIR)/$(PACKAGE_BASENAME).tar.gz
 	mkdir -p $(BUILD_DIR)/tarball
 	cp $(BUILD_DIR)/$(BINARY_NAME) $(BUILD_DIR)/tarball/
-	tar -czf $(BUILD_DIR)/$(PACKAGE_BASENAME).tar.gz -C $(BUILD_DIR)/tarball $(BINARY_NAME)
+	cp man/$(BINARY_NAME).1 $(BUILD_DIR)/tarball/
+	cp build/tarball/Makefile $(BUILD_DIR)/tarball/
+	cp build/tarball/README $(BUILD_DIR)/tarball/
+	tar -czf $(BUILD_DIR)/$(PACKAGE_BASENAME).tar.gz -C $(BUILD_DIR)/tarball $(BINARY_NAME) $(BINARY_NAME).1 Makefile README
 	rm -rf $(BUILD_DIR)/tarball
 	@echo "Created: $(BUILD_DIR)/$(PACKAGE_BASENAME).tar.gz"
 

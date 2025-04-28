@@ -1,0 +1,50 @@
+# zlx
+
+A flexible Zipline upload client with configurable settings and command-line overrides.
+
+## Installation
+
+```bash
+# Install to /usr/local (default)
+make install
+
+# Or install to a different location
+make install PREFIX=/usr
+```
+
+## Uninstallation
+
+```bash
+make uninstall
+```
+
+## Usage
+
+```bash
+# Upload a file
+zlx up file.txt
+
+# Upload with clipboard copy
+zlx up file.txt -c
+
+# Upload with max views
+zlx up file.txt -m 5
+
+# View all commands and options
+man zlx
+```
+
+## Configuration
+
+```bash
+# Set server
+zlx config set servername "zipline.example.com"
+
+# Set token
+zlx config set token "your_token_here"
+
+# View current settings
+zlx config list
+```
+
+For more information, see the man page: `man zlx` 
